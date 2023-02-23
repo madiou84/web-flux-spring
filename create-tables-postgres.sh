@@ -1,33 +1,23 @@
-#!/bin/sh
+#!/bin/bash
 
-# Définir les variables pour se connecter à la base de données
-DB_HOST="localhost"
-DB_PORT="5432"
-DB_NAME="postgres"
-DB_USER="root"
-DB_PASSWORD="root"
+DB_NAME="ma_base_de_donnees"
+DB_USER="utilisateur"
+DB_PASSWORD="mot_de_passe"
 
-# Définir le nom de la table et les colonnes
-TABLE_NAME="accounts"
-id="id"
-ID_TYPE="SERIAL PRIMARY KEY"
-NAME="name"
-NAME_TYPE="TEXT"
-CREATED_AT="createdAt"
-CREATED_AT_TYPE="TIMESTAMP"a
+# Vérifier si la base de données existe déjà
+if psql -lqt | cut -d \| -f 1 | grep -qw $DB_NAME; then
+    echo "La base de données $DB_NAME existe déjà."
+else
+    # Créer la base de données si elle n'existe pas
+    psql -c "DO \$$
+             BEGIN
+             IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '$DB_NAME') THEN
+             CREATE DATABASE $DB_NAME;
+             END IF;
+             END\$$;"
 
-# CREATE TABLE example_table (
-#     id SERIAL PRIMARY KEY,
-#     column1 TEXT,
-#     column2 INTEGER,
-#     column3 TIMESTAMP
-# );
+    # Créer les tables de la base de données si nécessaire
+    psql -d $DB_NAME -f chemin/vers/fichier.sql -U $DB_USER -W $DB_PASSWORD
 
-# Se connecter à la base de données et exécuter la requête pour créer la table
-# psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "CREATE TABLE $TABLE_NAME ($id $ID_TYPE, $NAME $NAME_TYPE, $CREATED_AT $CREATED_AT_TYPE);"
-
-# Vérifier que la table a été créée en listant les tables de la base de données
-# psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "\dt"
-
-psql -h localhost -p 5432 -U root -d postgres -c "CREATE TABLE accounts (id SERIAL PRIMARY KEY, name TEXT, created_at TIMESTAMP);"
-psql -h localhost -p 5432 -U root -d postgres -c "\dt"
+    echo "La base de données $DB_NAME a été créée."
+fi
