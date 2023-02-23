@@ -4,20 +4,19 @@ DB_NAME="ma_base_de_donnees"
 DB_USER="utilisateur"
 DB_PASSWORD="mot_de_passe"
 
+CREATE OR REPLACE FUNCTION create_database_if_not_exists() RETURNS void AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'ma_base_de_donnees') THEN
+        EXECUTE 'CREATE DATABASE ma_base_de_donnees';
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
 # Vérifier si la base de données existe déjà
 if psql -lqt | cut -d \| -f 1 | grep -qw $DB_NAME; then
     echo "La base de données $DB_NAME existe déjà."
 else
-    # Créer la base de données si elle n'existe pas
-    psql -c "DO \$$
-             BEGIN
-             IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '$DB_NAME') THEN
-             CREATE DATABASE $DB_NAME;
-             END IF;
-             END\$$;"
-
-    # Créer les tables de la base de données si nécessaire
-    psql -d $DB_NAME -f chemin/vers/fichier.sql -U $DB_USER -W $DB_PASSWORD
+    create_database_if_not_exists();
 
     echo "La base de données $DB_NAME a été créée."
 fi
